@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estonian Texts - Inline Markup (Data Fix)</title>
+    <title>Estonian Texts - Mobile Friendly Tooltips</title>
     <style>
         /* Basic Reset & Body Styling for Centering */
         * {
@@ -56,8 +56,9 @@
             margin-bottom: 20px; /* Space before buttons */
             min-height: 100px; /* Ensure content area has some minimum height */
             padding: 0 10px; /* Horizontal padding for content */
-            /* Add word-break for better handling of long strings without spaces */
             word-break: break-word;
+             /* Improve scrolling on touch devices */
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Individual Page/Paragraph */
@@ -86,7 +87,6 @@
             position: relative;
             border-bottom: 2px dotted #f0ad4e; /* Subtle underline */
             padding: 0 2px;
-            /* Ensure highlights behave inline */
             display: inline;
         }
 
@@ -100,7 +100,8 @@
             border-radius: 6px;
             font-size: 0.9em;
             z-index: 1000;
-            pointer-events: none;
+            /* Tooltips should not capture pointer events themselves */
+            /* pointer-events: none; --- REMOVED - needed if we add close button */
             white-space: nowrap;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
@@ -124,6 +125,8 @@
             cursor: pointer;
             font-size: 1em;
             transition: background-color 0.2s ease;
+             /* Prevent double-tap zoom on buttons */
+            touch-action: manipulation;
         }
 
         #navigation button:hover:not(:disabled) {
@@ -228,28 +231,22 @@
             let currentPageIndex = 0;
             let totalPages = 0; // Will be calculated after generation
 
+            // --- State for clicked tooltip ---
+            let clickedTooltipSpan = null; // Keep track of the span whose tooltip is open via click
+
             // --- Helper function to parse inline markup ---
             function parseAndHighlight(text) {
-                // Using the non-greedy regex, which should work fine now data has no inner parens
                 const regex = /\[([^\]]+)\]\((.*?)\)/g;
-                // Basic HTML entity escaping for attribute value
                 const escapeAttr = (str) => str.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
                 try {
-                     // Replace matches with the span element
                     return text.replace(regex, (match, word, translation) => {
                         const escapedTranslation = escapeAttr(translation);
-                        // Ensure word doesn't get unwanted HTML interpretation
                         const escapedWord = word.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        return `<span class="highlight" data-translation="${escapedTranslation}">${escapedWord}</span>`;
+                        // Add tabindex="0" to make spans focusable for accessibility, though not strictly needed for click
+                        return `<span class="highlight" data-translation="${escapedTranslation}" tabindex="0">${escapedWord}</span>`;
                     });
-                } catch (e) {
-                    console.error("Error parsing text:", text, e);
-                    // Return text as is if parsing fails, logging the error
-                    return text;
-                }
+                } catch (e) { console.error("Error parsing text:", text, e); return text; }
             }
-
 
             // --- Content Generation ---
             function generatePageContent(stories) {
@@ -262,23 +259,24 @@
                         pageDiv.classList.add('page');
                         pageDiv.setAttribute('data-story-page', storyPageIndex + 1);
                         pageDiv.setAttribute('data-story-total', storyTotalPages);
-
-                        // Use the parser function to set innerHTML
                         pageDiv.innerHTML = parseAndHighlight(paragraphString);
-
                         pageContent.appendChild(pageDiv);
                         overallPageIndex++;
                     });
                 });
-                // Update total pages count after generation
                 totalPages = overallPageIndex;
-                // Re-select dynamic elements
                 pages = document.querySelectorAll('.page');
                 highlights = document.querySelectorAll('.highlight'); // Re-select after generation
             }
 
             // --- Pagination Logic (Unchanged) ---
             function showPage(index) {
+                // Hide any "clicked" tooltip when changing pages
+                if (clickedTooltipSpan) {
+                    tooltip.style.display = 'none';
+                    clickedTooltipSpan = null;
+                }
+
                 pages.forEach(page => page.classList.remove('active'));
                 const currentPageElement = pages[index];
                 if (currentPageElement) {
@@ -294,35 +292,90 @@
                 nextBtn.disabled = index === totalPages - 1;
             }
 
-            // --- Tooltip Logic (Unchanged, but added extra hide conditions) ---
+            // --- MODIFIED Tooltip Logic ---
             function setupTooltips() {
+                // Function to show the tooltip for a given span
+                function showTooltipForSpan(spanElement) {
+                    const translation = spanElement.getAttribute('data-translation');
+                    if (!translation) return;
+
+                    tooltip.textContent = translation.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                    tooltip.style.display = 'block';
+
+                    const rect = spanElement.getBoundingClientRect();
+                    let top = rect.top - tooltip.offsetHeight - 5; // Prefer above
+                    let left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2);
+
+                    // Adjust position to stay within viewport
+                    if (tooltip.offsetHeight > rect.top - 10) { // If not enough space above, show below
+                         top = rect.bottom + 5;
+                    }
+                    if (left < 5) { // Prevent overflow left
+                        left = 5;
+                    } else if (left + tooltip.offsetWidth > window.innerWidth - 5) { // Prevent overflow right
+                        left = window.innerWidth - tooltip.offsetWidth - 5;
+                    }
+
+                    tooltip.style.top = `${top + window.scrollY}px`;
+                    tooltip.style.left = `${left + window.scrollX}px`;
+                }
+
+                // --- Event Listeners ---
                  highlights.forEach(span => {
-                     span.addEventListener('mouseenter', (event) => {
-                         const translation = span.getAttribute('data-translation');
-                         if (translation) {
-                            // Basic unescaping for display - minimal needed here
-                             tooltip.textContent = translation.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-                             tooltip.style.display = 'block';
+                    // HOVER: Show tooltip only if no tooltip is pinned by a click
+                    span.addEventListener('mouseenter', () => {
+                        if (!clickedTooltipSpan) { // Only show hover if nothing is clicked
+                           showTooltipForSpan(span);
+                        }
+                    });
 
-                             const rect = span.getBoundingClientRect();
-                             let top = rect.top - tooltip.offsetHeight - 5;
-                             let left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2);
+                    // HOVER: Hide tooltip only if it wasn't pinned by a click
+                    span.addEventListener('mouseleave', () => {
+                         if (!clickedTooltipSpan) { // Only hide hover tooltip
+                            tooltip.style.display = 'none';
+                        }
+                    });
 
-                             if (top < 0) { top = rect.bottom + 5; }
-                             if (left < 0) { left = 5; }
-                             else if (left + tooltip.offsetWidth > window.innerWidth) {
-                                 left = window.innerWidth - tooltip.offsetWidth - 5;
-                             }
+                    // CLICK/TAP: Toggle tooltip visibility
+                    span.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent click from bubbling up to document listener instantly
 
-                             tooltip.style.top = `${top + window.scrollY}px`;
-                             tooltip.style.left = `${left + window.scrollX}px`;
-                         }
-                     });
-                     span.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-                     span.addEventListener('click', () => { tooltip.style.display = 'none'; });
+                        const currentSpan = event.currentTarget;
+
+                        // If clicking the *same* span that has the tooltip open, close it
+                        if (clickedTooltipSpan === currentSpan) {
+                            tooltip.style.display = 'none';
+                            clickedTooltipSpan = null;
+                        }
+                        // Otherwise, show the tooltip for this span (or move it if already open for another)
+                        else {
+                            showTooltipForSpan(currentSpan);
+                            clickedTooltipSpan = currentSpan; // Mark this span as having the clicked tooltip
+                        }
+                    });
                  });
-                 window.addEventListener('scroll', () => { tooltip.style.display = 'none'; }, { passive: true });
-                 pageContent.addEventListener('scroll', () => { tooltip.style.display = 'none'; }, { passive: true });
+
+                 // --- Global Listeners to Hide Clicked Tooltip ---
+
+                 // Hide tooltip if scrolling main window or content area
+                 const hideOnClickOutside = () => {
+                    if (clickedTooltipSpan) {
+                         tooltip.style.display = 'none';
+                         clickedTooltipSpan = null;
+                     }
+                 };
+                 window.addEventListener('scroll', hideOnClickOutside, { passive: true });
+                 pageContent.addEventListener('scroll', hideOnClickOutside, { passive: true });
+
+                 // Hide tooltip if clicking anywhere *outside* the tooltip itself
+                 document.addEventListener('click', (event) => {
+                    if (clickedTooltipSpan && !tooltip.contains(event.target) && !clickedTooltipSpan.contains(event.target) ) {
+                       tooltip.style.display = 'none';
+                       clickedTooltipSpan = null;
+                    }
+                 });
+
+                 // Hide tooltip on page change (already included in showPage)
             }
 
             // --- Initialization ---
@@ -340,14 +393,14 @@
             prevBtn.addEventListener('click', () => {
                 if (currentPageIndex > 0) {
                     currentPageIndex--;
-                    showPage(currentPageIndex);
+                    showPage(currentPageIndex); // showPage now handles hiding tooltip
                 }
             });
 
             nextBtn.addEventListener('click', () => {
                 if (currentPageIndex < totalPages - 1) {
                     currentPageIndex++;
-                    showPage(currentPageIndex);
+                    showPage(currentPageIndex); // showPage now handles hiding tooltip
                 }
             });
         });
