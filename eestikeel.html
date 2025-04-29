@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estonian Texts - Inline Markup (Data Fix)</title>
+    <style>
+        /* Basic Reset & Body Styling for Centering */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: sans-serif;
+            background-color: #f0f0f0; /* Light background for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Container for the text box */
+        #container {
+            background-color: #ffffff;
+            padding: 20px 40px 30px 40px; /* Adjusted top padding */
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 800px; /* Adjust as needed */
+            width: 90%;
+            max-height: 90vh; /* Limit height */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center content like buttons */
+            overflow: hidden; /* Prevent content overflow */
+        }
+
+        /* Page Indicator */
+        #page-indicator {
+            width: 100%;
+            text-align: right; /* Align to the right */
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px; /* Space below indicator */
+            padding-right: 10px; /* Align with page content padding */
+            height: 20px; /* Fixed height to prevent layout shift */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        /* Page Content Area */
+        #page-content {
+            width: 100%;
+            overflow-y: auto; /* Allow scrolling if content exceeds height */
+            flex-grow: 1; /* Allow content to take available space */
+            margin-bottom: 20px; /* Space before buttons */
+            min-height: 100px; /* Ensure content area has some minimum height */
+            padding: 0 10px; /* Horizontal padding for content */
+            /* Add word-break for better handling of long strings without spaces */
+            word-break: break-word;
+        }
+
+        /* Individual Page/Paragraph */
+        .page {
+            display: none; /* Hide pages by default */
+            font-size: 1.2em; /* Increased font size */
+            line-height: 1.6; /* Improve readability */
+            animation: fadeIn 0.5s ease-in-out; /* Simple fade-in animation */
+            text-align: left; /* Ensure text aligns left within the centered box */
+        }
+
+        .page.active {
+            display: block; /* Show active page */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Highlighted Text */
+        .highlight {
+            background-color: #fff3cd; /* Lighter yellow */
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+            border-bottom: 2px dotted #f0ad4e; /* Subtle underline */
+            padding: 0 2px;
+            /* Ensure highlights behave inline */
+            display: inline;
+        }
+
+        /* Custom Tooltip */
+        #custom-tooltip {
+            position: absolute;
+            display: none;
+            background-color: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            z-index: 1000;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* Navigation Buttons */
+        #navigation {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding-top: 15px;
+            border-top: 1px solid #eee; /* Separator */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        #navigation button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+
+        #navigation button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        #navigation button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <div id="page-indicator"></div>
+
+        <div id="page-content"></div>
+
+        <div id="navigation">
+            <button id="prevBtn">&larr; Eelmine</button> <button id="nextBtn">Järgmine &rarr;</button> </div>
+    </div>
+
+    <div id="custom-tooltip"></div>
+
+    <script>
+        // ===============================================
+        // DATA STRUCTURE - Option 3: Inline Markup (Data Fixed)
+        // ===============================================
+        const storiesData = [
+          { // Story 1
+            paragraphs: [
+              // Paragraph 1 / Page 1
+              "On hommik. Kell on seitse. Ma [ärkan üles](I wake up). Ma lähen [vannituppa](to the bathroom). Ma pesen [hambaid](teeth, partitive pl) ja nägu. Siis ma [panen riidesse](I get dressed). Ma panen selga särgi ja [püksid](trousers, plural). Ma lähen [kööki](to the kitchen). Ma söön [putru](porridge, partitive). Ma joon kohvi. Nüüd ma olen [valmis](ready) ja lähen [tööle](to work).",
+              // Paragraph 2 / Page 2
+              "Ma võtan koti ja [võtmed](keys, plural). Ma lähen kodust välja ja lähen [bussipeatusesse](to the bus stop). Ma ootan bussi. Buss tuleb. Ma lähen [bussi peale](onto the bus). Buss [hakkab sõitma](starts to drive/move). Ma vaatan [aknast](from the window) välja. Ma näen [pargis](in the park) musta kassi. Kass istub [muru peal](on the grass). Ta on armas. Buss [viib](takes/carries) mind tööle.",
+              // Paragraph 3 / Page 3
+              "Ma töötan [kontoris](in the office). Ma töötan [arvutiga](with the computer). Ma kirjutan [kirju](letters, partitive plural). Kell kaksteist on [lõuna](lunch). Ma lähen sööma. Ma söön [suppi](soup, partitive) ja leiba. [Pärast lõunat](After lunch) ma töötan veel. Kell neli [saab tööpäev läbi](the workday ends/is over). Siis ma lähen koju.",
+              // Paragraph 4 / Page 4
+              "Ma lähen bussipeatusesse ja sõidan [bussiga](by bus) koju. Ma lähen [poodi](to the shop). Ma ostan [süüa](food, to buy). Kodus ma teen [õhtusööki](dinner, partitive). Ma [söön õhtusöögi ära](I eat dinner, completive). Siis ma pesen [nõud](dishes, plural). [Pärast seda](After that) ma istun ja vaatan [telekat](TV, partitive, colloquial). Mul on [rahulik](peaceful / calm) õhtu.",
+              // Paragraph 5 / Page 5
+              "Ma vaatan telekat. [Hiljem](Later) ma kuulen [midagi](something, partitive). Heli tuleb [ukse tagant](from behind the door). Mis see on? Ma lähen [ukse juurde](to the door). Ma vaatan [uksesilmast](from the peephole) välja. [Ukse taga](Behind the door) on must kass! See on [see sama](this same / the very same) kass [pargist](from the park). [Kuidas](How) ta siin on? Kass vaatab mind. Ta teeb \"Näu!\"."
+            ]
+          },
+          { // Story 2
+            paragraphs: [
+              // Paragraph 1 / Page 6
+              "Täna on [laupäev](Saturday). On hommik. Ma ei lähe täna tööle. Ma tahan minna [turule](to the market). Turg on minu kodu [lähedal](near / nearby). Ma tahan osta [värsket](fresh, partitive) toitu. Ma võtan oma suure koti ja [natuke](a little bit) raha [kaasa](along / with me). Ma [panen jope selga](I put on a jacket) ja lähen välja.",
+              // Paragraph 2 / Page 7
+              "Ma lähen turule [jalgsi](on foot). Ilm on täna ilus. Päike [paistab](shines), aga on natuke [jahe](cool) tuul. [Tänaval](On the street) on juba palju [inimesi](people, partitive plural) ja [autosid](cars, partitive plural). Ma näen ühte naist [koeraga](with a dog) [jalutamas](walking). Koer [liputab saba](wags its tail). Ma kõnnin [umbes](about / approximately) kümme minutit. Siis ma olen turu [värava juures](at the gate).",
+              // Paragraph 3 / Page 8
+              "[Turul](At the market) on palju [rahvast](crowd / people, partitive) ja [lärmi](noise, partitive). Seal on palju [erinevaid](different, partitive plural) [lette](stalls / counters, partitive plural). [Müüjad](Sellers / vendors, plural) müüvad oma [kaupa](goods / merchandise, partitive). Ma näen ilusaid [köögivilju](vegetables, partitive plural): punased tomatid, rohelised kurgid, suured [kapsad](cabbages, plural). Ma näen ka magusaid [puuvilju](fruits, partitive plural): kollased banaanid, rohelised [pirnid](pears, plural) ja Eesti õunad. Üks naine müüb mett ja moosi. Ma [vaatan ringi](I look around) ja [valin](I choose), mida osta.",
+              // Paragraph 4 / Page 9
+              "Ma lähen ühe [leti juurde](to the stall / counter). Ma tahan osta õunu ja tomateid. Ma valin viis [ilusat](beautiful, partitive plural) punast õuna. Ma valin ka [mõned](some, plural) tomatid [salati jaoks](for a salad). Siis ma lähen teise leti juurde ja ostan ühe värske [sooja](warm, partitive) leiva. Müüja paneb [asjad](things, plural) minu kotti. Ma maksan talle. Müüja [naeratab](smiles) ja ütleb \"Head päeva!\".",
+              // Paragraph 5 / Page 10
+              "Mul on nüüd toit kotis. Kott on [raske](heavy). Ma [hakkan](I start) koju tagasi minema. Aga siis ma kuulen, et [keegi](someone / somebody) [hüüab](shouts / calls out): \"Tere!\". Ma [pööran ringi](I turn around) ja vaatan. See on minu hea sõber! Ma ei ole teda [ammu](long ago / for a long time) näinud. Me [räägime natuke juttu](we chat a bit / talk a little) [seal samas](right there) turul. Mul on väga [hea meel](glad / pleased) teda [kohata](to meet / encounter)."
+            ]
+          },
+          { // Story 3
+            paragraphs: [
+                // Paragraph 1 / Page 11
+               "Ma olen täna kodus. Ma istun oma toa [akna juures](at the window) ja vaatan välja. [Õues](Outside / outdoors) on [kevad](spring). Ilm on soe ja päike paistab. Minu akna ees [kasvab](grows) suur [kask](birch tree). Puul on juba väikesed [helerohelised](light green, plural) [lehed](leaves, plural) [küljes](attached / on it). [Loodus](Nature) [ärkab](wakes up).",
+                // Paragraph 2 / Page 12
+               "[Äkki](Suddenly) ma näen midagi [liikumas](moving). Kaks väikest lindu lendavad [kiiresti](quickly) kase juurde. [Neil on](They have) kollane [kõht](belly / stomach), roheline [selg](back) ja must pea. Ma [arvan](I think / I suppose), et need on [rasvatihased](great tits, bird species, plural). Nad on väga [levinud](common / widespread) linnud Eestis. Nad lendavad [oksalt oksale](from branch to branch) ja teevad [kõva häält](loud voice / loud noise, partitive): \"tsitsit!\".",
+                // Paragraph 3 / Page 13
+                "Ma vaatan linde [hoolega](carefully / diligently). Neil on midagi [nokas](in the beak). Üks lind [hoiab](holds) nokas väikest [oksaraagu](twig, partitive). [Teisel linnul](The other bird has) on seal [rohukõrsi](blades of grass, partitive plural) ja [sammalt](moss, partitive). Nad [viivad](they take / carry) need asjad ühele [jämedale](thick, allative adjective) oksale. Nad lendavad [jälle](again) minema ja [toovad](they bring) [aina](constantly / always / more and more) uut [materjali](material, partitive). Nad [ehitavad](they build) [endale](for themselves) [pesa](nest).",
+                // Paragraph 4 / Page 14
+               "Ma [jälgin](I watch / observe / follow) neid linde iga päev. Nende pesa läheb [iga päevaga](with each day / day by day) natuke [suuremaks](bigger, becoming) ja [uhkemaks](grander / fancier, becoming). See on juba [päris](quite / really) [ümmargune](round) ja näeb soe välja. Linnud töötavad väga [usinasti](diligently / industriously) [koos](together). Nad lendavad [hommikust õhtuni](from morning till evening), [et](in order to) oma kodu [valmis saada](get it finished). Nad on väga [kiired](fast / quick, plural) [ehitajad](builders, plural).",
+                // Paragraph 5 / Page 15
+               "Täna ma vaatan jälle pesa. See näeb nüüd [täitsa valmis välja](completely ready / finished). Üks rasvatihane istub [vaikselt](quietly / silently) [pesa sees](inside the nest). Teine [valvab](guards / watches over) [kõrval](beside / nearby) oksal. Ma arvan, et [varsti](soon) on seal pesas väikesed [munad](eggs, plural) ja siis tulevad [linnupojad](chicks / fledglings, plural). Lindudel on nüüd oma armas kodu minu [akna all](under the window)."
+            ]
+          },
+          { // Story 4
+             paragraphs: [
+                   // Paragraph 1 / Page 16
+                   "Ma olen [näljane](hungry). Ma tahan täna süüa [kuskil](somewhere) [Vanalinnas](in the Old Town). Ma lähen oma [lemmikrestorani](to my favorite restaurant). See ei ole minu kodust [kaugel](far). Ma kõnnin sinna. Ilm on [päikesepaisteline](sunny). Vanalinn on ilus ja ma kõnnin [munakivitänaval](on the cobblestone street). Minu lemmikrestoran [asub](is located / situated) vanas majas. [Loodan](I hope), et seal on [vaba laud](free table).",
+                   // Paragraph 2 / Page 17
+                   "Ma [jõuan](I arrive / reach) ukse juurde. [Astun sisse](I step inside). Aga oh ei! Restoran on väga [rahvast täis](full of people / crowded). Seal on palju [turiste](tourists, partitive plural). Kõik lauad on [kinni](occupied / taken). [Ühtegi](Not a single, partitive) vaba [kohta](place / spot, partitive) ei ole. Ma ei saa siin täna süüa. See on natuke [tüütu](annoying / tedious), [sest](because) ma olen juba [päris näljane](quite hungry).",
+                   // Paragraph 3 / Page 18
+                   "Mida nüüd teha? Ma [pean leidma](I have to find) teise restorani. Ma lähen välja, [tagasi](back, adverb) tänavale. Ma kõnnin natuke [eemale](further away / afar), [teisele](to another) tänavale. Siin Vanalinnas on [õnneks](luckily / fortunately) palju [restorane](restaurants, partitive plural). Ma [vaatan ringi](I look around). Seal on teine [söögikoht](eatery / dining place) [ühes](in one) [kõrvaltänavas](in a side street). See [paistab](seems / appears) [vaiksem](quieter).",
+                   // Paragraph 4 / Page 19
+                   "Ma lähen selle teise [söögikoha juurde](to the eatery). Ma [teen ukse lahti](I open the door). Siin on [vabu laudu](free tables, partitive plural)! See koht on [hubane](cozy) ja [rahulik](calm / peaceful). Ei ole palju inimesi. Ma [valin endale](I choose for myself) laua ja istun. Ma [tellin](I order) [päevasuppi](soup of the day, partitive) ja musta leiba. Supp on soe ja väga hea. Nüüd on [kõht täis](my stomach is full) ja [tuju hea](I am in a good mood)."
+             ]
+           }
+        ];
+
+
+        // ===============================================
+        // DOM Ready Handler
+        // ===============================================
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Get static elements
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const tooltip = document.getElementById('custom-tooltip');
+            const pageContent = document.getElementById('page-content');
+            const pageIndicator = document.getElementById('page-indicator');
+
+            let pages = []; // Will hold generated page elements
+            let highlights = []; // Will hold generated highlight elements
+            let currentPageIndex = 0;
+            let totalPages = 0; // Will be calculated after generation
+
+            // --- Helper function to parse inline markup ---
+            function parseAndHighlight(text) {
+                // Using the non-greedy regex, which should work fine now data has no inner parens
+                const regex = /\[([^\]]+)\]\((.*?)\)/g;
+                // Basic HTML entity escaping for attribute value
+                const escapeAttr = (str) => str.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                try {
+                     // Replace matches with the span element
+                    return text.replace(regex, (match, word, translation) => {
+                        const escapedTranslation = escapeAttr(translation);
+                        // Ensure word doesn't get unwanted HTML interpretation
+                        const escapedWord = word.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        return `<span class="highlight" data-translation="${escapedTranslation}">${escapedWord}</span>`;
+                    });
+                } catch (e) {
+                    console.error("Error parsing text:", text, e);
+                    // Return text as is if parsing fails, logging the error
+                    return text;
+                }
+            }
+
+
+            // --- Content Generation ---
+            function generatePageContent(stories) {
+                pageContent.innerHTML = ''; // Clear previous content
+                let overallPageIndex = 0;
+                stories.forEach(story => {
+                    const storyTotalPages = story.paragraphs.length;
+                    story.paragraphs.forEach((paragraphString, storyPageIndex) => {
+                        const pageDiv = document.createElement('div');
+                        pageDiv.classList.add('page');
+                        pageDiv.setAttribute('data-story-page', storyPageIndex + 1);
+                        pageDiv.setAttribute('data-story-total', storyTotalPages);
+
+                        // Use the parser function to set innerHTML
+                        pageDiv.innerHTML = parseAndHighlight(paragraphString);
+
+                        pageContent.appendChild(pageDiv);
+                        overallPageIndex++;
+                    });
+                });
+                // Update total pages count after generation
+                totalPages = overallPageIndex;
+                // Re-select dynamic elements
+                pages = document.querySelectorAll('.page');
+                highlights = document.querySelectorAll('.highlight'); // Re-select after generation
+            }
+
+            // --- Pagination Logic (Unchanged) ---
+            function showPage(index) {
+                pages.forEach(page => page.classList.remove('active'));
+                const currentPageElement = pages[index];
+                if (currentPageElement) {
+                    currentPageElement.classList.add('active');
+                    const storyPage = currentPageElement.getAttribute('data-story-page');
+                    const storyTotal = currentPageElement.getAttribute('data-story-total');
+                    pageIndicator.textContent = (storyPage && storyTotal) ? `${storyPage} / ${storyTotal}` : '';
+                } else {
+                    pageIndicator.textContent = '';
+                }
+                pageContent.scrollTop = 0;
+                prevBtn.disabled = index === 0;
+                nextBtn.disabled = index === totalPages - 1;
+            }
+
+            // --- Tooltip Logic (Unchanged, but added extra hide conditions) ---
+            function setupTooltips() {
+                 highlights.forEach(span => {
+                     span.addEventListener('mouseenter', (event) => {
+                         const translation = span.getAttribute('data-translation');
+                         if (translation) {
+                            // Basic unescaping for display - minimal needed here
+                             tooltip.textContent = translation.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                             tooltip.style.display = 'block';
+
+                             const rect = span.getBoundingClientRect();
+                             let top = rect.top - tooltip.offsetHeight - 5;
+                             let left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2);
+
+                             if (top < 0) { top = rect.bottom + 5; }
+                             if (left < 0) { left = 5; }
+                             else if (left + tooltip.offsetWidth > window.innerWidth) {
+                                 left = window.innerWidth - tooltip.offsetWidth - 5;
+                             }
+
+                             tooltip.style.top = `${top + window.scrollY}px`;
+                             tooltip.style.left = `${left + window.scrollX}px`;
+                         }
+                     });
+                     span.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+                     span.addEventListener('click', () => { tooltip.style.display = 'none'; });
+                 });
+                 window.addEventListener('scroll', () => { tooltip.style.display = 'none'; }, { passive: true });
+                 pageContent.addEventListener('scroll', () => { tooltip.style.display = 'none'; }, { passive: true });
+            }
+
+            // --- Initialization ---
+            try {
+                generatePageContent(storiesData); // Create pages from data
+                setupTooltips(); // Add tooltip listeners
+                showPage(currentPageIndex); // Show first page
+            } catch(e) {
+                console.error("Initialization failed:", e);
+                pageContent.innerHTML = '<p style="color: red;">Error loading content. Please check console.</p>';
+            }
+
+
+            // --- Navigation Event Listeners (Unchanged) ---
+            prevBtn.addEventListener('click', () => {
+                if (currentPageIndex > 0) {
+                    currentPageIndex--;
+                    showPage(currentPageIndex);
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentPageIndex < totalPages - 1) {
+                    currentPageIndex++;
+                    showPage(currentPageIndex);
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
